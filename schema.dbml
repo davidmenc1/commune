@@ -1,0 +1,198 @@
+enum roles {
+  guest
+  member
+  admin
+}
+
+enum user_roles {
+  user
+  admin
+  owner
+}
+
+table attachments {
+  id varchar(255) [pk, not null]
+  message_id varchar(255) [not null]
+  filename varchar(255) [not null]
+  file_type varchar(255) [not null]
+  file_size varchar(255) [not null]
+  storage_path varchar(255) [not null]
+  created_at "timestamp with time zone" [not null]
+}
+
+table channel_github_integrations {
+  id varchar(255) [pk, not null]
+  channel_id varchar(255) [not null]
+  repo_owner varchar(255) [not null]
+  repo_name varchar(255) [not null]
+  access_token text [not null]
+  connected_by varchar(255) [not null]
+  created_at "timestamp with time zone" [not null]
+}
+
+table channel_gitlab_integrations {
+  id varchar(255) [pk, not null]
+  channel_id varchar(255) [not null]
+  project_id varchar(255) [not null]
+  project_path varchar(255) [not null]
+  access_token text [not null]
+  connected_by varchar(255) [not null]
+  created_at "timestamp with time zone" [not null]
+}
+
+table channel_group_access {
+  channel_id varchar(255) [not null]
+  group_id varchar(255) [not null]
+  can_write boolean [not null, default: true]
+
+  indexes {
+    (channel_id, group_id) [pk]
+  }
+}
+
+table channel_members {
+  user_id varchar [not null]
+  channel_id varchar [not null]
+  role roles [not null]
+
+  indexes {
+    (user_id, channel_id) [pk]
+  }
+}
+
+table channel_user_access {
+  channel_id varchar(255) [not null]
+  user_id varchar(255) [not null]
+  can_write boolean [not null, default: true]
+
+  indexes {
+    (channel_id, user_id) [pk]
+  }
+}
+
+table channel_webhooks {
+  id varchar(255) [pk, not null]
+  channel_id varchar(255) [not null]
+  name varchar(255) [not null]
+  token_hash text [not null]
+  created_by varchar(255) [not null]
+  created_at "timestamp with time zone" [not null]
+  last_used_at "timestamp with time zone"
+}
+
+table channels {
+  id varchar(255) [pk, not null]
+  name varchar(255) [not null]
+  created_at "timestamp with time zone" [not null]
+  owner_id varchar(255) [not null]
+  is_private boolean [not null, default: false]
+}
+
+table group_members {
+  group_id varchar(255) [not null]
+  user_id varchar(255) [not null]
+
+  indexes {
+    (group_id, user_id) [pk]
+  }
+}
+
+table groups {
+  id varchar(255) [pk, not null]
+  name varchar(255) [not null]
+  owner_id varchar(255) [not null]
+  created_at "timestamp with time zone" [not null]
+}
+
+table messages {
+  id varchar(255) [pk, not null]
+  content text [not null]
+  created_at "timestamp with time zone" [not null]
+  author_id varchar(255) [not null]
+  channel_id varchar(255)
+  direct_to_id varchar(255)
+  parent_id varchar(255)
+  updated boolean [not null, default: false]
+  webhook_id varchar(255)
+}
+
+table notifications {
+  id varchar(255) [pk, not null]
+  user_id varchar(255) [not null]
+  message_id varchar(255) [not null]
+  channel_id varchar(255)
+  mention_type varchar(50) [not null]
+  is_read boolean [not null, default: false]
+  created_at "timestamp with time zone" [not null]
+}
+
+table reactions {
+  id varchar(255) [pk, not null]
+  message_id varchar(255) [not null]
+  user_id varchar(255) [not null]
+  reaction varchar(255) [not null]
+  created_at "timestamp with time zone" [not null]
+}
+
+table users {
+  id varchar(255) [pk, not null]
+  name varchar(255) [not null]
+  email varchar(255) [not null, unique]
+  image varchar(255) [not null]
+  role user_roles [not null, default: 'user']
+  created_at "timestamp with time zone" [not null]
+}
+
+ref: attachments.message_id > messages.id
+
+ref: channel_github_integrations.channel_id > channels.id
+
+ref: channel_github_integrations.connected_by - users.id
+
+ref: channel_gitlab_integrations.channel_id > channels.id
+
+ref: channel_gitlab_integrations.connected_by - users.id
+
+ref: channel_group_access.channel_id > channels.id
+
+ref: channel_group_access.group_id > groups.id
+
+ref: channel_members.user_id > users.id
+
+ref: channel_members.channel_id > channels.id
+
+ref: channel_user_access.channel_id > channels.id
+
+ref: channel_user_access.user_id > users.id
+
+ref: channel_webhooks.channel_id - channels.id
+
+ref: channel_webhooks.created_by - users.id
+
+ref: channels.owner_id > users.id
+
+ref: group_members.group_id > groups.id
+
+ref: group_members.user_id > users.id
+
+ref: groups.owner_id > users.id
+
+ref: messages.author_id > users.id
+
+ref: messages.channel_id > channels.id
+
+ref: messages.direct_to_id > users.id
+
+ref: messages.parent_id > messages.id
+
+ref: messages.webhook_id > channel_webhooks.id
+
+ref: notifications.user_id > users.id
+
+ref: notifications.message_id > messages.id
+
+ref: notifications.channel_id - channels.id
+
+ref: reactions.message_id > messages.id
+
+ref: reactions.user_id - users.id

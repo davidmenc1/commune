@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="145" height="32" viewBox="0 0 145 32" fill="none">
+  <!-- Icon badge (rounded square, primary fill) -->
+  <rect width="32" height="32" rx="8" fill="#0d9488"/>
+  <!-- Message circle icon (16×16 centered, primary-foreground) -->
+  <g transform="translate(8, 8) scale(0.6667)" stroke="#fafaf9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" />
+  </g>
+  <!-- Wordmark -->
+  <text x="42" y="21" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="600" letter-spacing="-0.025em" fill="currentColor">Commune</text>
+</svg>
