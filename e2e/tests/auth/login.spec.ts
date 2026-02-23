@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { loginUser, registerUser, TEST_USERS } from '../../fixtures/auth';
+import { loginUser, registerUser, TEST_USERS, type TestUser } from '../../fixtures/auth';
 import { setupZeroMocks } from '../../fixtures/zero-mock';
 
-let sharedTestUser: any;
+let sharedTestUser: TestUser;
 
 test.describe('User Login', () => {
   test.beforeEach(async ({ page }) => {
