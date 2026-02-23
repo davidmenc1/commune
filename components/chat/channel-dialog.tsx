@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useQuery, useZero } from "@rocicorp/zero/react";
+import { useQuery } from "@rocicorp/zero/react";
 import { useTranslations } from 'next-intl';
 import {
   getAllUsers,
@@ -37,6 +37,7 @@ import type {
   UsersTable,
 } from "@/zero-schema.gen";
 import { MultiSelectSection } from "./multi-select-section";
+import { useAppZero } from "@/app/zero/use-zero";
 
 type ChannelUserAccessWithUser = ChannelUserAccess & {
   user?: UsersTable;
@@ -82,29 +83,21 @@ export function ChannelComposerDialog({
   const tCommon = useTranslations('common');
   const [internalOpen, setInternalOpen] = useState(false);
   const dialogOpen = open ?? internalOpen;
-  const zero = useZero();
+  const zero = useAppZero();
   const jwt = useJwt();
   const authToken = jwt && jwt.length > 0 ? jwt : undefined;
-
-  if (!authToken) {
-    return trigger ? <Fragment>{trigger}</Fragment> : null;
-  }
-
-  const [users] = useQuery(getAllUsers({ jwt: authToken }));
-  const [groups] = useQuery(getUserGroups({ jwt: authToken }));
+  const [users] = useQuery(getAllUsers({ jwt: authToken ?? "" }), {
+    enabled: !!authToken,
+  });
+  const [groups] = useQuery(getUserGroups({ jwt: authToken ?? "" }), {
+    enabled: !!authToken,
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const currentUser = useMemo(
     () => (authToken ? getUserFromJwt(authToken) : null),
     [authToken]
   );
-
-  const currentUserRecord = useMemo(() => {
-    if (!users || !currentUser) {
-      return undefined;
-    }
-    return users.find((user) => user.id === currentUser.id);
-  }, [users, currentUser]);
 
   const selectableUsers = useMemo(() => {
     if (!users || !currentUser) {
@@ -226,6 +219,10 @@ export function ChannelComposerDialog({
 
   const isLoading = !users || !currentUser;
   const canSubmit = !!name.trim() && !isSubmitting && !isLoading;
+
+  if (!authToken) {
+    return trigger ? <Fragment>{trigger}</Fragment> : null;
+  }
 
   return (
     <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>

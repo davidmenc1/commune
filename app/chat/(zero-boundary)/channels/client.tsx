@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { useQuery, useZero } from "@rocicorp/zero/react";
+import { useQuery } from "@rocicorp/zero/react";
 import { getAllUsers, getChannels, getUserGroups } from "./query";
 import { getUserFromJwt, useJwt } from "@/app/auth/jwt";
 import { ChannelComposerDialog } from "@/components/chat/channel-dialog";
@@ -62,24 +62,22 @@ export function ClientChannels() {
     }
   };
 
-  if (!authToken) {
-    return (
-      <div className="flex h-[calc(100vh-3.5rem)] items-center justify-center">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-          <span className="text-sm">{tCommon("loading")}</span>
-        </div>
-      </div>
-    );
-  }
+  const [channels] = useQuery(getChannels({ jwt: authToken ?? "" }), {
+    enabled: !!authToken,
+  });
+  const [groups] = useQuery(getUserGroups({ jwt: authToken ?? "" }), {
+    enabled: !!authToken,
+  });
+  const [users] = useQuery(getAllUsers({ jwt: authToken ?? "" }), {
+    enabled: !!authToken,
+  });
 
-  const [channels] = useQuery(getChannels({ jwt: authToken }));
-  const [groups] = useQuery(getUserGroups({ jwt: authToken }));
-  const [users] = useQuery(getAllUsers({ jwt: authToken }));
-
-  const currentUser = useMemo(() => getUserFromJwt(authToken), [authToken]);
+  const currentUser = useMemo(
+    () => (authToken ? getUserFromJwt(authToken) : null),
+    [authToken]
+  );
   const allUsers = users ?? [];
-  const currentUserRecord = allUsers.find((user) => user.id === currentUser.id);
+  const currentUserRecord = allUsers.find((user) => user.id === currentUser?.id);
   const currentRole = currentUserRecord?.role ?? "user";
   const canManage = currentRole === "admin" || currentRole === "owner";
 
@@ -103,6 +101,17 @@ export function ClientChannels() {
         user.email.toLowerCase().includes(q)
     );
   }, [allUsers, searchTerm]);
+
+  if (!authToken) {
+    return (
+      <div className="flex h-[calc(100vh-3.5rem)] items-center justify-center">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          <span className="text-sm">{tCommon("loading")}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[calc(100vh-3.5rem)] overflow-y-auto">

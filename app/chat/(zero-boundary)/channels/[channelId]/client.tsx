@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useZero } from "@rocicorp/zero/react";
+import { useQuery } from "@rocicorp/zero/react";
 import { useTranslations } from 'next-intl';
 import { getAllUsers, getAllChannels, getChannelById, getChannelMessages } from "../query";
 import { getUserFromJwt, useJwt } from "@/app/auth/jwt";
@@ -74,7 +74,7 @@ import {
   BuildStatusBadge,
 } from "@/components/github";
 import { UnifiedMessageContent } from "@/components/chat/message-content";
-import { MentionPicker, useMentionState, type MentionPickerItem } from "@/components/chat/mention-picker";
+import { MentionPicker, useMentionState } from "@/components/chat/mention-picker";
 import { UserCard } from "@/components/chat/user-card";
 import {
   HoverCard,
@@ -91,6 +91,7 @@ import { Github, Plug, MessageSquare } from "lucide-react";
 import { WebhookDialog } from "@/components/chat/webhook-dialog";
 import { ThreadPreview } from "@/components/chat/thread-preview";
 import { ThreadPanel } from "@/components/chat/thread-panel";
+import { useAppZero } from "@/app/zero/use-zero";
 
 // Custom GitLab icon component
 function GitLabIcon({ className }: { className?: string }) {
@@ -440,7 +441,7 @@ function MessageRow({
 }) {
   const t = useTranslations('channelDetail');
   const tCommon = useTranslations('common');
-  const zero = useZero();
+  const zero = useAppZero();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -949,7 +950,7 @@ function MessageComposer({
   const t = useTranslations('channelDetail');
   const tCommon = useTranslations('common');
   const jwt = useJwt();
-  const zero = useZero();
+  const zero = useAppZero();
   const [message, setMessage] = useState("");
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);

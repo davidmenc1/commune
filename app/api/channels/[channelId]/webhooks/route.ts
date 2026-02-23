@@ -77,15 +77,16 @@ async function ensureCanManageChannel(userId: string, channelId: string) {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { channelId: string } }
+  { params }: { params: Promise<{ channelId: string }> }
 ) {
+  const { channelId } = await params;
   const user = getUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    await ensureCanManageChannel(user.id, params.channelId);
+    await ensureCanManageChannel(user.id, channelId);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Forbidden";
     const status = message === "Forbidden" ? 403 : 404;
@@ -100,15 +101,16 @@ export async function GET(
       last_used_at: channelWebhooksTable.last_used_at,
     })
     .from(channelWebhooksTable)
-    .where(eq(channelWebhooksTable.channel_id, params.channelId));
+    .where(eq(channelWebhooksTable.channel_id, channelId));
 
   return NextResponse.json({ webhooks });
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { channelId: string } }
+  { params }: { params: Promise<{ channelId: string }> }
 ) {
+  const { channelId } = await params;
   const user = getUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -124,7 +126,7 @@ export async function POST(
   const name = body.name?.trim() || "Webhook";
 
   try {
-    await ensureCanManageChannel(user.id, params.channelId);
+    await ensureCanManageChannel(user.id, channelId);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Forbidden";
     const status = message === "Forbidden" ? 403 : 404;
@@ -139,7 +141,7 @@ export async function POST(
 
   await db.insert(channelWebhooksTable).values({
     id: webhookId,
-    channel_id: params.channelId,
+    channel_id: channelId,
     name,
     token_hash: tokenHash,
     created_by: user.id,
@@ -161,4 +163,3 @@ export async function POST(
     url,
   });
 }
-

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useZero } from "@rocicorp/zero/react";
+import { useQuery } from "@rocicorp/zero/react";
 import { Bell, Check, CheckCheck, Trash2, AtSign } from "lucide-react";
 import Link from "next/link";
 import {
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { NotificationsTable, UsersTable, ChannelsTable } from "@/zero-schema.gen";
+import { useAppZero } from "@/app/zero/use-zero";
 
 interface NotificationItemProps {
   notification: NotificationsTable;
@@ -25,15 +26,12 @@ interface NotificationItemProps {
 
 function NotificationItem({
   notification,
-  users,
+  users: _users,
   channels,
   onMarkAsRead,
   onDelete,
 }: NotificationItemProps) {
-  const author = users.find((u) => {
-    // Find the message author by looking at the message
-    return true; // We'll need to get this from the message
-  });
+  void _users;
 
   const channel = channels.find((c) => c.id === notification.channel_id);
 
@@ -114,7 +112,7 @@ interface NotificationDropdownProps {
 }
 
 export function NotificationDropdown({ userId }: NotificationDropdownProps) {
-  const zero = useZero();
+  const zero = useAppZero();
   const [isOpen, setIsOpen] = useState(false);
 
   // Query notifications for the current user
@@ -187,7 +185,7 @@ export function NotificationDropdown({ userId }: NotificationDropdownProps) {
                 No notifications yet
               </p>
               <p className="text-xs text-muted-foreground">
-                You'll be notified when someone mentions you
+                {"You'll be notified when someone mentions you"}
               </p>
             </div>
           ) : (
@@ -225,4 +223,3 @@ export function NotificationDropdown({ userId }: NotificationDropdownProps) {
     </DropdownMenu>
   );
 }
-

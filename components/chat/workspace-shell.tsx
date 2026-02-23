@@ -39,20 +39,12 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const tChannels = useTranslations('channels');
   const jwt = useJwt();
   const authToken = jwt && jwt.length > 0 ? jwt : undefined;
-
-  if (!authToken) {
-    return (
-      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-          <span className="text-sm">{t('loading')}</span>
-        </div>
-      </div>
-    );
-  }
-
-  const [channels] = useQuery(getChannels({ jwt: authToken }));
-  const [users] = useQuery(getAllUsers({ jwt: authToken }));
+  const [channels] = useQuery(getChannels({ jwt: authToken ?? "" }), {
+    enabled: !!authToken,
+  });
+  const [users] = useQuery(getAllUsers({ jwt: authToken ?? "" }), {
+    enabled: !!authToken,
+  });
   const pathname = usePathname();
   const router = useRouter();
   const [isCommandOpen, setIsCommandOpen] = useState(false);
@@ -101,6 +93,17 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const getInitials = (name: string) => {
     return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
   };
+
+  if (!authToken) {
+    return (
+      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          <span className="text-sm">{t('loading')}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

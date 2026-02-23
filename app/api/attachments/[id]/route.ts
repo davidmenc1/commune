@@ -60,7 +60,7 @@ export async function GET(
       headers["Cache-Control"] = "public, max-age=31536000, immutable";
     }
 
-    return new NextResponse(fileBuffer, { headers });
+    return new NextResponse(new Uint8Array(fileBuffer), { headers });
   } catch (error) {
     console.error("Serve attachment error:", error);
     return NextResponse.json(
@@ -69,5 +69,4 @@ export async function GET(
     );
   }
 }
-
 

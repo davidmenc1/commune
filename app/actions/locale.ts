@@ -3,9 +3,13 @@
 import { cookies } from 'next/headers';
 import { locales } from '@/i18n/config';
 
+function isLocale(value: string): value is (typeof locales)[number] {
+  return locales.includes(value as (typeof locales)[number]);
+}
+
 export async function setLocaleCookie(locale: string) {
   // Validate locale
-  if (!locales.includes(locale as any)) {
+  if (!isLocale(locale)) {
     throw new Error('Invalid locale');
   }
 

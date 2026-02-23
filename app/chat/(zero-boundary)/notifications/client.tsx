@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useZero } from "@rocicorp/zero/react";
+import { useQuery } from "@rocicorp/zero/react";
 import { useTranslations } from 'next-intl';
 import { Bell, Check, CheckCheck, Trash2, AtSign } from "lucide-react";
 import Link from "next/link";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { NotificationsTable } from "@/zero-schema.gen";
+import { useAppZero } from "@/app/zero/use-zero";
 
 interface NotificationsClientProps {
   userId: string;
@@ -15,7 +16,7 @@ interface NotificationsClientProps {
 
 export function NotificationsClient({ userId }: NotificationsClientProps) {
   const t = useTranslations('notifications');
-  const zero = useZero();
+  const zero = useAppZero();
 
   const [notifications] = useQuery(
     zero.query.notificationsTable
@@ -168,5 +169,4 @@ export function NotificationsClient({ userId }: NotificationsClientProps) {
     </div>
   );
 }
-
 

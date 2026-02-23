@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useZero } from "@rocicorp/zero/react";
+import { useQuery } from "@rocicorp/zero/react";
 import { useTranslations } from "next-intl";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Paperclip, Loader2, FileIcon, Download } from "lucide-react";
@@ -23,6 +23,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import { UserCard } from "./user-card";
 import { MentionPicker, useMentionState } from "./mention-picker";
 import EmojiPicker, { Theme } from "emoji-picker-react";
+import { useAppZero } from "@/app/zero/use-zero";
 
 interface ThreadPanelProps {
   parentMessageId: string;
@@ -191,7 +192,7 @@ function ThreadMessageRow({
   hasGitLabIntegration: boolean;
   isParent?: boolean;
 }) {
-  const zero = useZero();
+  const zero = useAppZero();
   const author = users.find((u) => u.id === message.author_id);
   const reactions = message.reactions || [];
   const attachments = message.attachments || [];
@@ -442,7 +443,7 @@ function ThreadComposer({
 }) {
   const t = useTranslations("channelDetail");
   const tCommon = useTranslations("common");
-  const zero = useZero();
+  const zero = useAppZero();
   const [message, setMessage] = useState("");
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);

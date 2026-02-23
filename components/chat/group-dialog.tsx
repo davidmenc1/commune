@@ -7,7 +7,7 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
-import { useQuery, useZero } from "@rocicorp/zero/react";
+import { useQuery } from "@rocicorp/zero/react";
 import { useTranslations } from 'next-intl';
 import { getAllUsers } from "@/app/chat/(zero-boundary)/channels/query";
 import { getUserFromJwt, useJwt } from "@/app/auth/jwt";
@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Users } from "lucide-react";
 import type { UsersTable } from "@/zero-schema.gen";
 import { MultiSelectSection } from "./multi-select-section";
+import { useAppZero } from "@/app/zero/use-zero";
 
 type GroupDialogProps = {
   trigger?: ReactNode;
@@ -46,30 +47,27 @@ export function GroupDialog({
   const tCommon = useTranslations('common');
   const [internalOpen, setInternalOpen] = useState(false);
   const dialogOpen = open ?? internalOpen;
-  const zero = useZero();
+  const zero = useAppZero();
   const jwt = useJwt();
   const authToken = jwt && jwt.length > 0 ? jwt : undefined;
-
-  if (!authToken) {
-    return trigger ? <Fragment>{trigger}</Fragment> : null;
-  }
-
-  const [users] = useQuery(getAllUsers({ jwt: authToken }));
+  const [users] = useQuery(getAllUsers({ jwt: authToken ?? "" }), {
+    enabled: !!authToken,
+  });
   const [name, setName] = useState("");
   const [memberIds, setMemberIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const currentUser = useMemo(
-    () => getUserFromJwt(authToken),
+    () => (authToken ? getUserFromJwt(authToken) : null),
     [authToken]
   );
 
   const selectableUsers = useMemo(() => {
-    if (!users) {
+    if (!users || !currentUser) {
       return [];
     }
     return users.filter((user) => user.id !== currentUser.id);
-  }, [users, currentUser.id]);
+  }, [users, currentUser]);
 
   const selectedMembers = useMemo(() => {
     const map = new Map((users ?? []).map((user) => [user.id, user]));
@@ -119,6 +117,10 @@ export function GroupDialog({
 
   const isLoading = !users;
   const canSubmit = !!name.trim() && !isSubmitting && !isLoading;
+
+  if (!authToken) {
+    return trigger ? <Fragment>{trigger}</Fragment> : null;
+  }
 
   return (
     <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
@@ -199,5 +201,3 @@ export function GroupDialog({
     </Dialog>
   );
 }
-
-

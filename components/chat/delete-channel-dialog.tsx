@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useZero } from "@rocicorp/zero/react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from 'next-intl';
 import {
@@ -15,6 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Loader2 } from "lucide-react";
+import { useAppZero } from "@/app/zero/use-zero";
 
 type DeleteChannelDialogProps = {
   channelId: string;
@@ -30,7 +30,7 @@ export function DeleteChannelDialog({
   onOpenChange,
 }: DeleteChannelDialogProps) {
   const t = useTranslations('deleteChannelDialog');
-  const zero = useZero();
+  const zero = useAppZero();
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -76,5 +76,4 @@ export function DeleteChannelDialog({
     </AlertDialog>
   );
 }
-
 

@@ -58,15 +58,16 @@ async function ensureCanManageChannel(userId: string, channelId: string) {
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { channelId: string; webhookId: string } }
+  { params }: { params: Promise<{ channelId: string; webhookId: string }> }
 ) {
+  const { channelId, webhookId } = await params;
   const user = getUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    await ensureCanManageChannel(user.id, params.channelId);
+    await ensureCanManageChannel(user.id, channelId);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Forbidden";
     const status = message === "Forbidden" ? 403 : 404;
@@ -77,12 +78,11 @@ export async function DELETE(
     .delete(channelWebhooksTable)
     .where(
       and(
-        eq(channelWebhooksTable.channel_id, params.channelId),
-        eq(channelWebhooksTable.id, params.webhookId)
+        eq(channelWebhooksTable.channel_id, channelId),
+        eq(channelWebhooksTable.id, webhookId)
       )
     );
 
   return NextResponse.json({ success: true });
 }
-
 

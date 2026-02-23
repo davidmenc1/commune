@@ -12,6 +12,8 @@ type ChannelAccessInput = {
   groupIds?: string[];
 };
 
+type ChannelMemberRole = "admin" | "guest" | "member";
+
 type AttachmentInput = {
   id: string;
   filename: string;
@@ -118,7 +120,7 @@ async function addChannelMemberIfMissing(
   tx: Transaction<Schema>,
   channelId: string,
   userId: string,
-  role: string = DEFAULT_CHANNEL_ROLE
+  role: ChannelMemberRole = DEFAULT_CHANNEL_ROLE
 ) {
   const existing = await tx.query.channelMembers
     .where("channelId", channelId)

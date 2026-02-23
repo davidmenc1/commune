@@ -1,6 +1,6 @@
 "use client";
 
-import { useSuspenseQuery, useZero } from "@rocicorp/zero/react";
+import { useSuspenseQuery } from "@rocicorp/zero/react";
 import { useTranslations } from 'next-intl';
 import { isUserInZero, hasAnyUsers } from "./query";
 import { useJwt } from "@/app/auth/jwt";
@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAppZero } from "@/app/zero/use-zero";
 
 export function ClientTraffic() {
   const t = useTranslations('traffic');
@@ -69,7 +70,7 @@ export function ClientTraffic() {
 
 const UserSignupForm = ({ needsAccessCode }: { needsAccessCode: boolean }) => {
   const t = useTranslations('traffic');
-  const zero = useZero();
+  const zero = useAppZero();
   const [setupCode, setSetupCode] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
