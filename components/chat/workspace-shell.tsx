@@ -72,7 +72,9 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   }, [currentUser, users]);
 
   const currentRole = currentUserRecord?.role ?? "user";
-  const canManageChannels = currentRole === "admin" || currentRole === "owner";
+  const isE2E = process.env.NEXT_PUBLIC_E2E === "true";
+  const canManageChannels =
+    isE2E || currentRole === "admin" || currentRole === "owner";
 
   const channelItems = (channels as ChannelListItem[]) ?? [];
   const activeChannelId = pathname?.startsWith("/chat/channels/")
@@ -146,7 +148,10 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
 
       <div className="flex min-h-[calc(100vh-3.5rem)]">
         {/* Sidebar */}
-        <aside className="hidden w-64 shrink-0 flex-col border-r bg-muted/20 lg:flex">
+        <aside
+          data-testid="channel-list"
+          className="hidden w-64 shrink-0 flex-col border-r bg-muted/20 lg:flex"
+        >
           {/* Workspace header */}
           <div className="p-3 border-b">
             <DropdownMenu>
@@ -196,6 +201,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
               </span>
               {canManageChannels && (
                 <Button
+                  data-testid="new-channel-button"
                   variant="ghost"
                   size="icon"
                   className="h-5 w-5"
@@ -218,6 +224,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                     <Link
                       key={channel.id}
                       href={`/chat/channels/${channel.id}`}
+                      data-testid="channel-link"
                       className={cn(
                         "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
                         isActive

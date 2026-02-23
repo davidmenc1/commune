@@ -248,6 +248,8 @@ export function ChannelComposerDialog({
               <Label htmlFor="channel-name">{t('channelName')}</Label>
               <Input
                 id="channel-name"
+                name="name"
+                data-testid="channel-name-input"
                 placeholder="general, product-planning…"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
@@ -340,6 +342,7 @@ export function ChannelComposerDialog({
           </Button>
           <Button
             type="button"
+            data-testid="submit-channel-button"
             onClick={handleSubmit}
             disabled={!canSubmit}
           >

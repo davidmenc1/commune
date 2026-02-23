@@ -1148,6 +1148,8 @@ function MessageComposer({
         <input
           ref={inputRef}
           type="text"
+          data-testid="message-input"
+          aria-label="Message input"
           placeholder={channelName ? t('messagePlaceholder', { channel: channelName }) : t('messagePlaceholderFallback')}
           value={message}
           onChange={(e) => {
@@ -1164,6 +1166,7 @@ function MessageComposer({
         <Button
           type="submit"
           size="sm"
+          data-testid="send-message-button"
           disabled={
             isUploading || (!message.trim() && pendingFiles.length === 0)
           }

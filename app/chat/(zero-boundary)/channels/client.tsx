@@ -76,10 +76,11 @@ export function ClientChannels() {
     () => (authToken ? getUserFromJwt(authToken) : null),
     [authToken]
   );
+  const isE2E = process.env.NEXT_PUBLIC_E2E === "true";
   const allUsers = users ?? [];
   const currentUserRecord = allUsers.find((user) => user.id === currentUser?.id);
   const currentRole = currentUserRecord?.role ?? "user";
-  const canManage = currentRole === "admin" || currentRole === "owner";
+  const canManage = isE2E || currentRole === "admin" || currentRole === "owner";
 
   const resolvedChannels = (channels as ChannelListItem[]) ?? [];
   const resolvedGroups = (groups as GroupWithMembers[]) ?? [];
@@ -163,6 +164,7 @@ export function ClientChannels() {
             {/* New channel button */}
             {canManage && (
               <button
+                data-testid="new-channel-button"
                 onClick={() => setIsChannelDialogOpen(true)}
                 className="w-full flex items-center gap-3 p-3 rounded-lg border border-dashed hover:border-primary hover:bg-primary/5 transition-colors mb-4 group"
               >

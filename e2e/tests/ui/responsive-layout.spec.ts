@@ -10,7 +10,7 @@ test.describe('Responsive Layout', () => {
 
   test('should display correctly on desktop', async ({ page }) => {
     await page.setViewportSize({ width: 1920, height: 1080 });
-    await expect(page.locator('text=Channels').first()).toBeVisible();
+    await expect(page.getByTestId('channel-list')).toBeVisible();
   });
 
   test('should display correctly on mobile', async ({ page }) => {

@@ -5,7 +5,7 @@
  * Includes methods to create test users, login, and manage auth state.
  */
 
-import { Page, expect } from '@playwright/test';
+import { Page } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -55,10 +55,27 @@ export async function registerUser(page: Page, user: TestUser) {
   await page.fill('input[name="name"]', user.name);
   
   await page.click('button[type="submit"]');
-  
-  // Wait for redirect after successful registration
-  // The app redirects to /chat/traffic after registration
-  await page.waitForURL('/chat/traffic', { timeout: 10000 });
+
+  // Wait for successful auth redirect. If registration fails (e.g. duplicate
+  // email under parallel execution), fallback to login with the same creds.
+  const reachedAuthRoute = await page
+    .waitForURL(/\/chat\/(traffic|channels)/, { timeout: 30000 })
+    .then(() => true)
+    .catch(() => false);
+
+  if (!reachedAuthRoute) {
+    await page.goto('/auth/login');
+    await page.fill('input[name="email"]', user.email);
+    await page.fill('input[name="password"]', user.password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/chat\/(traffic|channels)/, { timeout: 30000 });
+  }
+
+  // Prefer workspace route for channel-oriented tests, but do not hard-fail
+  // auth-focused tests if this extra navigation is slow.
+  if (!page.url().includes('/chat/channels')) {
+    await page.goto('/chat/channels', { timeout: 30000 }).catch(() => {});
+  }
 }
 
 /**
@@ -72,9 +89,13 @@ export async function loginUser(page: Page, user: TestUser) {
   
   await page.click('button[type="submit"]');
   
-  // Wait for redirect after successful login
-  // The app redirects to /chat/traffic after login
-  await page.waitForURL('/chat/traffic', { timeout: 10000 });
+  // Wait for redirect after successful login.
+  await page.waitForURL(/\/chat\/(traffic|channels)/, { timeout: 30000 });
+
+  // Keep helper behavior consistent with workspace-focused tests.
+  if (!page.url().includes('/chat/channels')) {
+    await page.goto('/chat/channels', { timeout: 30000 }).catch(() => {});
+  }
 }
 
 /**
@@ -150,7 +171,10 @@ export async function createAuthStateForUser(page: Page, user: TestUser, stateFi
   }
   
   // Wait for successful authentication
-  await page.waitForURL('/chat/channels', { timeout: 10000 });
+  await page.waitForURL(/\/chat\/(traffic|channels)/, { timeout: 30000 });
+  if (!page.url().includes('/chat/channels')) {
+    await page.goto('/chat/channels', { timeout: 30000 }).catch(() => {});
+  }
   
   // Save auth state
   await saveAuthState(page, stateFile);

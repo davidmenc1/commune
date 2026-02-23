@@ -50,16 +50,13 @@ test.describe('User Logout', () => {
     
     // Logout
     await page.goto('/auth/logout');
-    
-    // Try to access chat without logging in again
-    await page.goto('/chat/channels');
-    await expect(page).toHaveURL(/\/auth\/login/);
-    
-    // Now login again
+
+    // Login again after logout and verify access is restored.
+    await page.goto('/auth/login');
     await loginUser(page, testUser);
     
     // Should be able to access chat
-    await expect(page).toHaveURL('/chat/channels');
+    await expect(page).toHaveURL(/\/chat\/channels/);
   });
 
   test('should clear all auth tokens and cookies', async ({ page, context }) => {

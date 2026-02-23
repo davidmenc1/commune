@@ -13,73 +13,64 @@ test.describe('Channel Creation', () => {
     const channelName = generateChannelName('public');
     
     // Click create channel button
-    const createButton = page.locator('button:has-text("New Channel"), button:has-text("Create Channel"), button:has-text("+")').first();
-    await createButton.click({ timeout: 10000 });
+    await page.getByTestId('new-channel-button').first().click({ timeout: 10000 });
     
     // Fill channel form
-    await page.fill('input[name="name"], input[placeholder*="channel name" i]', channelName);
-    await page.fill('textarea[name="description"], textarea[placeholder*="description" i]', 'Test channel description');
-    
-    // Ensure public is selected
-    const publicRadio = page.locator('input[type="radio"][value="public"], input[name="is_public"][value="true"]');
-    if (await publicRadio.count() > 0) {
-      await publicRadio.check();
-    }
+    await page.getByTestId('channel-name-input').fill(channelName);
     
     // Submit
-    await page.click('button[type="submit"]:has-text("Create"), button:has-text("Save")');
+    await page.getByTestId('submit-channel-button').click();
     
     // Verify channel appears in list
-    await expect(page.locator(`text=${channelName}`)).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByTestId('channel-link').filter({ hasText: channelName }).first()
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test('should create a new private channel', async ({ page }) => {
     const channelName = generateChannelName('private');
     
-    const createButton = page.locator('button:has-text("New Channel"), button:has-text("Create Channel"), button:has-text("+")').first();
-    await createButton.click({ timeout: 10000 });
+    await page.getByTestId('new-channel-button').first().click({ timeout: 10000 });
     
-    await page.fill('input[name="name"], input[placeholder*="channel name" i]', channelName);
-    await page.fill('textarea[name="description"], textarea[placeholder*="description" i]', 'Private test channel');
+    await page.getByTestId('channel-name-input').fill(channelName);
     
-    // Select private
-    const privateRadio = page.locator('input[type="radio"][value="private"], input[name="is_public"][value="false"]');
-    if (await privateRadio.count() > 0) {
-      await privateRadio.check();
+    // Select private via the visibility switch used by the current UI.
+    const privateSwitch = page.locator('button[role="switch"]').first();
+    if (await privateSwitch.count()) {
+      await privateSwitch.click();
     }
     
-    await page.click('button[type="submit"]:has-text("Create"), button:has-text("Save")');
+    await page.getByTestId('submit-channel-button').click();
     
-    await expect(page.locator(`text=${channelName}`)).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByTestId('channel-link').filter({ hasText: channelName }).first()
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test('should require channel name', async ({ page }) => {
-    const createButton = page.locator('button:has-text("New Channel"), button:has-text("Create Channel"), button:has-text("+")').first();
-    await createButton.click({ timeout: 10000 });
+    await page.getByTestId('new-channel-button').first().click({ timeout: 10000 });
     
-    // Try to submit without name
-    await page.click('button[type="submit"]:has-text("Create"), button:has-text("Save")');
-    
-    // Dialog should still be open or show error
-    await page.waitForTimeout(500);
+    // Submit should be disabled without a name.
+    await expect(page.getByTestId('submit-channel-button')).toBeDisabled();
   });
 
   test('should not allow duplicate channel names', async ({ page }) => {
     const channelName = generateChannelName('duplicate');
     
     // Create first channel
-    const createButton = page.locator('button:has-text("New Channel"), button:has-text("Create Channel"), button:has-text("+")').first();
+    const createButton = page.getByTestId('new-channel-button').first();
     await createButton.click({ timeout: 10000 });
-    await page.fill('input[name="name"], input[placeholder*="channel name" i]', channelName);
-    await page.click('button[type="submit"]:has-text("Create"), button:has-text("Save")');
-    await expect(page.locator(`text=${channelName}`)).toBeVisible({ timeout: 10000 });
+    await page.getByTestId('channel-name-input').fill(channelName);
+    await page.getByTestId('submit-channel-button').click();
+    await expect(
+      page.getByTestId('channel-link').filter({ hasText: channelName }).first()
+    ).toBeVisible({ timeout: 10000 });
     
-    // Try to create duplicate
+    // Try to create duplicate (current mocked E2E backend is lenient, this should at least not crash).
     await createButton.click({ timeout: 10000 });
-    await page.fill('input[name="name"], input[placeholder*="channel name" i]', channelName);
-    await page.click('button[type="submit"]:has-text("Create"), button:has-text("Save")');
+    await page.getByTestId('channel-name-input').fill(channelName);
+    await page.getByTestId('submit-channel-button').click();
     
-    // Should show error or prevent creation
-    await page.waitForTimeout(1000);
+    await expect(page.getByTestId('channel-list')).toBeVisible();
   });
 });

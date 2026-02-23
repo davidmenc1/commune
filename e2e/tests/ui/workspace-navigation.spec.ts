@@ -1,6 +1,13 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { registerUser, TEST_USERS } from '../../fixtures/auth';
 import { setupZeroMocks } from '../../fixtures/zero-mock';
+
+async function createChannel(page: Page, name: string) {
+  await page.getByTestId('new-channel-button').first().click();
+  await page.getByTestId('channel-name-input').fill(name);
+  await page.getByTestId('submit-channel-button').click();
+  await expect(page.locator(`text=${name}`).first()).toBeVisible({ timeout: 10000 });
+}
 
 test.describe('Workspace Navigation', () => {
   test.beforeEach(async ({ page }) => {
@@ -9,14 +16,18 @@ test.describe('Workspace Navigation', () => {
   });
 
   test('should display workspace shell', async ({ page }) => {
-    await expect(page.locator('text=Channels').first()).toBeVisible();
+    await expect(page.getByTestId('channel-list')).toBeVisible();
   });
 
   test('should navigate between channels', async ({ page }) => {
-    const channelLinks = page.locator('[href*="/chat/channels/"]');
-    if (await channelLinks.count() > 0) {
-      await channelLinks.first().click();
-      await expect(page).toHaveURL(/\/chat\/channels\//);
-    }
+    const channelName = `nav-${Date.now()}`;
+    await createChannel(page, channelName);
+
+    const channelLink = page
+      .getByTestId('channel-link')
+      .filter({ hasText: channelName })
+      .first();
+    await channelLink.click();
+    await expect(page).toHaveURL(/\/chat\/channels\//);
   });
 });

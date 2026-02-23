@@ -13,6 +13,16 @@ import { Page, Route } from '@playwright/test';
  * This intercepts all Zero-related network requests and provides mock responses
  */
 export async function setupZeroMocks(page: Page) {
+  // Keep tests deterministic by forcing English locale.
+  await page.context().addCookies([
+    {
+      name: "NEXT_LOCALE",
+      value: "en",
+      domain: "localhost",
+      path: "/",
+    },
+  ]);
+
   // Mock Zero server WebSocket connection
   // Since Playwright doesn't directly intercept WebSockets, we mock the HTTP endpoints instead
   

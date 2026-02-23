@@ -10,12 +10,14 @@ test.describe('Channel Access Control', () => {
   test('should allow users to access public channels', async ({ page }) => {
     await registerUser(page, { ...TEST_USERS.user1, email: `access-${Date.now()}@test.com` });
     
-    // Navigate to a public channel (e.g., general)
+    // Navigate to channels workspace and open any available channel if present.
     await page.goto('/chat/channels');
-    const publicChannel = page.locator('text=general').first();
-    if (await publicChannel.isVisible()) {
+    const publicChannel = page.getByTestId('channel-link').first();
+    if (await publicChannel.count()) {
       await publicChannel.click();
       await expect(page).toHaveURL(/\/chat\/channels\//);
+    } else {
+      await expect(page.getByTestId('channel-list')).toBeVisible();
     }
   });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -11,22 +11,32 @@ export default function Logout() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const hasTriggeredRef = useRef(false);
 
-  async function onSignOut() {
+  const onSignOut = useCallback(async () => {
     setIsSubmitting(true);
     setError(null);
-    const { error } = await authClient.signOut();
 
-    if (error) {
-      setError(error.message ?? "Something went wrong");
+    try {
+      const { error } = await authClient.signOut();
+      if (error) {
+        setError(error.message ?? "Something went wrong");
+      }
+    } finally {
+      clearJwt();
+      router.replace("/auth/login");
+      router.refresh();
       setIsSubmitting(false);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (hasTriggeredRef.current) {
       return;
     }
-
-    clearJwt();
-    router.push("/auth/login");
-    router.refresh();
-  }
+    hasTriggeredRef.current = true;
+    void onSignOut();
+  }, [onSignOut]);
 
   return (
     <div className="max-w-md pt-10 mx-auto">
@@ -35,7 +45,7 @@ export default function Logout() {
         <div className="space-y-6">
           {error && <p className="text-red-500">{error}</p>}
           <Button type="button" onClick={onSignOut} disabled={isSubmitting}>
-            {isSubmitting ? "Signing out..." : "Sign out"}
+            {isSubmitting ? "Signing out..." : "Sign out again"}
           </Button>
         </div>
       </Card>

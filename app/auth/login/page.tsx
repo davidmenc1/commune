@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { authClient } from "../client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getJwt } from "../jwt";
 import Link from "next/link";
@@ -26,6 +26,34 @@ export default function Login() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function redirectAuthenticatedUser() {
+      try {
+        const { data, error } = await authClient.getSession();
+        const sessionToken = data?.session?.token;
+        if (error || !sessionToken || cancelled) {
+          return;
+        }
+
+        await getJwt(sessionToken);
+        if (!cancelled) {
+          router.replace("/chat/channels");
+          router.refresh();
+        }
+      } catch {
+        // Best-effort redirect check; login form remains usable on failures.
+      }
+    }
+
+    void redirectAuthenticatedUser();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
   
   const formSchema = z.object({
     email: z.string().email(t('validation.invalidEmail')),
