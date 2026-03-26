@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/app/db/db";
 import { channelGithubIntegrationsTable } from "@/app/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { decodeJwt } from "jose";
 import { jwtSchema } from "@/app/auth/jwt";
-import { GitHubClient } from "@/lib/github";
+import { GitHubClient, serializeGitHubCredentialsForStorage } from "@/lib/github";
 
 function getUserFromRequest(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -47,7 +47,8 @@ export async function GET(request: NextRequest) {
   }
 
   // Don't return the access token to the client
-  const { access_token, ...safeIntegration } = integration[0];
+  const safeIntegration = { ...integration[0] };
+  delete (safeIntegration as { access_token?: string }).access_token;
 
   return NextResponse.json({ integration: safeIntegration });
 }
@@ -60,7 +61,15 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { channelId, accessToken, repoOwner, repoName } = body;
+  const {
+    channelId,
+    accessToken,
+    refreshToken,
+    tokenExpiresAt,
+    refreshTokenExpiresAt,
+    repoOwner,
+    repoName,
+  } = body;
 
   if (!channelId || !accessToken || !repoOwner || !repoName) {
     return NextResponse.json(
@@ -73,12 +82,19 @@ export async function POST(request: NextRequest) {
   try {
     const client = new GitHubClient(accessToken);
     await client.getRepo(repoOwner, repoName);
-  } catch (err) {
+  } catch {
     return NextResponse.json(
       { error: "Invalid access token or repository" },
       { status: 400 }
     );
   }
+
+  const credentialsForStorage = serializeGitHubCredentialsForStorage({
+    accessToken,
+    refreshToken,
+    tokenExpiresAt,
+    refreshTokenExpiresAt,
+  });
 
   // Check if integration already exists
   const existing = await db
@@ -94,7 +110,7 @@ export async function POST(request: NextRequest) {
       .set({
         repo_owner: repoOwner,
         repo_name: repoName,
-        access_token: accessToken,
+        access_token: credentialsForStorage,
         connected_by: user.id,
       })
       .where(eq(channelGithubIntegrationsTable.channel_id, channelId));
@@ -118,7 +134,7 @@ export async function POST(request: NextRequest) {
     channel_id: channelId,
     repo_owner: repoOwner,
     repo_name: repoName,
-    access_token: accessToken,
+    access_token: credentialsForStorage,
     connected_by: user.id,
     created_at: new Date(),
   });
@@ -156,4 +172,3 @@ export async function DELETE(request: NextRequest) {
 
   return NextResponse.json({ success: true });
 }
-

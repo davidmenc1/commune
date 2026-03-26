@@ -3,11 +3,13 @@
 Název projektu: **Self-hosted chatovací aplikace pro vývojářské týmy s real-time synchronizací**
 
 ## Anotace
+
 Cílem projektu je návrh, implementace a nasazení webové chatovací aplikace určené primárně pro vývojářské týmy. Aplikace má umožnit rychlou týmovou komunikaci v kanálech, práci s vlákny, zmínkami, notifikacemi a přílohami. Součástí řešení je integrace s platformami GitHub a GitLab (zobrazování odkazů na issue, pull requesty/merge requesty, commity a pipeline/build stavy) a podpora webhooků pro automatizované zprávy z externích systémů.
 
 Projekt je realizován jako self-hosted řešení, aby organizace měla plnou kontrolu nad daty i provozem. Důraz je kladen na real-time synchronizaci mezi klienty, přehledné uživatelské rozhraní a rozšiřitelnost systému.
 
 ## Hlavní cíle projektu
+
 1. Navrhnout architekturu moderní chatovací aplikace pro týmovou spolupráci.
 2. Implementovat real-time komunikaci a synchronizaci dat mezi uživateli.
 3. Implementovat správu kanálů, skupin, zpráv, vláken, reakcí a příloh.
@@ -17,6 +19,7 @@ Projekt je realizován jako self-hosted řešení, aby organizace měla plnou ko
 7. Připravit dokumentaci, testovací scénáře a postup nasazení.
 
 ## Očekávané výstupy
+
 - Funkční webová aplikace nasaditelná na vlastní infrastruktuře.
 - Zdrojové kódy ve veřejném repozitáři.
 - Technická dokumentace architektury a použitých technologií.
@@ -35,9 +38,23 @@ Podpis autora: ........................................
 
 Děkuji vedoucímu maturitního projektu za odborné vedení, průběžné konzultace a věcné připomínky během vývoje aplikace i zpracování dokumentace. Poděkování patří také rodině a spolužákům za podporu, zpětnou vazbu a testování vytvořeného řešení.
 
-# Klíčová slova
+# Resumé a klíčová slova
 
-self-hosted chat, real-time synchronizace, Rocicorp Zero, Next.js, TypeScript, PostgreSQL, Drizzle ORM, Better Auth, GitHub integrace, GitLab integrace, webhooky, týmová komunikace
+## Resumé (CZ)
+
+Tato maturitní práce se zaměřuje na návrh a implementaci self-hosted chatovací aplikace pro vývojářské týmy s real-time synchronizací. Řešení kombinuje týmovou komunikaci v kanálech, vlákna, zmínky, notifikace, práci s přílohami a napojení na GitHub a GitLab, včetně webhooků pro automatizované zprávy z externích systémů. Při realizaci jsem využil moderní webový stack (Next.js, TypeScript, PostgreSQL, Drizzle ORM a Zero) a kladl důraz na přehlednou architekturu, výkon a rozšiřitelnost. Výsledkem je funkční webová aplikace, kterou lze provozovat na vlastní infrastruktuře, a která pokrývá hlavní komunikační potřeby technického týmu při vývoji softwaru.
+
+## Klíčová slova (CZ)
+
+self-hosted chat, real-time synchronizace, týmová komunikace, kanály a vlákna, GitHub integrace, GitLab integrace, webhooky, notifikace
+
+## Resumé (EN)
+
+This graduation project focuses on designing and implementing a self-hosted real-time chat application for software development teams. The solution combines channel-based communication, message threads, mentions, notifications, file attachments, and integrations with GitHub and GitLab, including webhooks for automated external events. The implementation uses a modern web stack (Next.js, TypeScript, PostgreSQL, Drizzle ORM, and Zero) with emphasis on clear architecture, performance, and extensibility. The result is a functional web application that can be deployed on private infrastructure and supports the core collaboration needs of technical teams during software development.
+
+## Keywords (EN)
+
+self-hosted chat, real-time synchronization, team communication, channels and threads, GitHub integration, GitLab integration, webhooks, notifications
 
 # 1. Úvod
 

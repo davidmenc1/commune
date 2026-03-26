@@ -2,6 +2,8 @@ import { db } from "@/app/db/db";
 import { channelGithubIntegrationsTable } from "@/app/db/schema";
 import { eq } from "drizzle-orm";
 
+const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
+
 // GitHub OAuth configuration
 export const GITHUB_CLIENT_ID = process.env.APP_GH_CLIENT_ID!;
 export const GITHUB_CLIENT_SECRET = process.env.APP_GH_CLIENT_SECRET!;
@@ -190,6 +192,20 @@ export interface GitHubWorkflowRun {
   } | null;
 }
 
+export interface GitHubTokenExchange {
+  accessToken: string;
+  refreshToken: string | null;
+  expiresAt: Date | null;
+  refreshTokenExpiresAt: Date | null;
+}
+
+interface GitHubStoredCredentials {
+  accessToken: string;
+  refreshToken: string | null;
+  expiresAt: Date | null;
+  refreshTokenExpiresAt: Date | null;
+}
+
 // Simple in-memory cache for GitHub API responses
 const cache = new Map<string, { data: unknown; expiry: number }>();
 const CACHE_TTL = 60 * 1000; // 1 minute
@@ -205,6 +221,153 @@ function getCached<T>(key: string): T | null {
 
 function setCache(key: string, data: unknown) {
   cache.set(key, { data, expiry: Date.now() + CACHE_TTL });
+}
+
+function parseTokenExpiry(seconds: unknown): Date | null {
+  const ttl =
+    typeof seconds === "number"
+      ? seconds
+      : typeof seconds === "string"
+        ? Number.parseInt(seconds, 10)
+        : Number.NaN;
+
+  if (!Number.isFinite(ttl) || ttl <= 0) {
+    return null;
+  }
+
+  return new Date(Date.now() + ttl * 1000);
+}
+
+function parseTokenExchange(data: Record<string, unknown>): GitHubTokenExchange {
+  const accessToken =
+    typeof data.access_token === "string" ? data.access_token : null;
+
+  if (!accessToken) {
+    throw new Error("GitHub OAuth error: missing access_token");
+  }
+
+  return {
+    accessToken,
+    refreshToken:
+      typeof data.refresh_token === "string" ? data.refresh_token : null,
+    expiresAt: parseTokenExpiry(data.expires_in),
+    refreshTokenExpiresAt: parseTokenExpiry(data.refresh_token_expires_in),
+  };
+}
+
+function parseStoredDate(value: unknown): Date | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function parseGitHubStoredCredentials(
+  storedValue: string
+): GitHubStoredCredentials {
+  try {
+    const parsed = JSON.parse(storedValue) as {
+      accessToken?: unknown;
+      refreshToken?: unknown;
+      expiresAt?: unknown;
+      refreshTokenExpiresAt?: unknown;
+    };
+
+    if (typeof parsed.accessToken !== "string" || !parsed.accessToken) {
+      throw new Error("missing access token");
+    }
+
+    return {
+      accessToken: parsed.accessToken,
+      refreshToken:
+        typeof parsed.refreshToken === "string" ? parsed.refreshToken : null,
+      expiresAt: parseStoredDate(parsed.expiresAt),
+      refreshTokenExpiresAt: parseStoredDate(parsed.refreshTokenExpiresAt),
+    };
+  } catch {
+    return {
+      accessToken: storedValue,
+      refreshToken: null,
+      expiresAt: null,
+      refreshTokenExpiresAt: null,
+    };
+  }
+}
+
+function serializeGitHubStoredCredentials(
+  credentials: GitHubStoredCredentials
+): string {
+  if (
+    !credentials.refreshToken &&
+    !credentials.expiresAt &&
+    !credentials.refreshTokenExpiresAt
+  ) {
+    return credentials.accessToken;
+  }
+
+  return JSON.stringify({
+    accessToken: credentials.accessToken,
+    refreshToken: credentials.refreshToken,
+    expiresAt: credentials.expiresAt?.toISOString() ?? null,
+    refreshTokenExpiresAt:
+      credentials.refreshTokenExpiresAt?.toISOString() ?? null,
+  });
+}
+
+export function serializeGitHubCredentialsForStorage(params: {
+  accessToken: string;
+  refreshToken?: string | null;
+  tokenExpiresAt?: string | null;
+  refreshTokenExpiresAt?: string | null;
+}): string {
+  const tokenExpiresAt = parseStoredDate(params.tokenExpiresAt);
+  const refreshTokenExpiresAt = parseStoredDate(params.refreshTokenExpiresAt);
+
+  return serializeGitHubStoredCredentials({
+    accessToken: params.accessToken,
+    refreshToken: params.refreshToken ?? null,
+    expiresAt: tokenExpiresAt,
+    refreshTokenExpiresAt,
+  });
+}
+
+function shouldRefreshToken(expiresAt: Date | null): boolean {
+  if (!expiresAt) {
+    return false;
+  }
+
+  return expiresAt.getTime() <= Date.now() + TOKEN_REFRESH_BUFFER_MS;
+}
+
+async function refreshIntegrationTokenIfNeeded(
+  integration: typeof channelGithubIntegrationsTable.$inferSelect
+): Promise<GitHubStoredCredentials> {
+  const credentials = parseGitHubStoredCredentials(integration.access_token);
+
+  if (!credentials.refreshToken || !shouldRefreshToken(credentials.expiresAt)) {
+    return credentials;
+  }
+
+  const refreshed = await refreshGitHubAccessToken(credentials.refreshToken);
+  const updatedCredentials: GitHubStoredCredentials = {
+    accessToken: refreshed.accessToken,
+    refreshToken: refreshed.refreshToken ?? credentials.refreshToken,
+    expiresAt: refreshed.expiresAt,
+    refreshTokenExpiresAt: refreshed.refreshTokenExpiresAt,
+  };
+
+  const serializedCredentials = serializeGitHubStoredCredentials(updatedCredentials);
+
+  await db
+    .update(channelGithubIntegrationsTable)
+    .set({
+      access_token: serializedCredentials,
+    })
+    .where(eq(channelGithubIntegrationsTable.id, integration.id));
+
+  return updatedCredentials;
 }
 
 export class GitHubClient {
@@ -371,7 +534,9 @@ export async function getGitHubClientForChannel(
     return null;
   }
 
-  return new GitHubClient(integration[0].access_token);
+  const activeCredentials = await refreshIntegrationTokenIfNeeded(integration[0]);
+
+  return new GitHubClient(activeCredentials.accessToken);
 }
 
 // Helper to get integration for a channel
@@ -386,26 +551,74 @@ export async function getChannelGitHubIntegration(channelId: string) {
 }
 
 // Exchange authorization code for access token
-export async function exchangeCodeForToken(code: string): Promise<string> {
+export async function exchangeCodeForToken(
+  code: string
+): Promise<GitHubTokenExchange> {
+  const form = new URLSearchParams({
+    client_id: GITHUB_CLIENT_ID,
+    client_secret: GITHUB_CLIENT_SECRET,
+    code,
+    redirect_uri: GITHUB_REDIRECT_URI,
+  });
+
   const response = await fetch(GITHUB_TOKEN_URL, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
+      "Content-Type": "application/x-www-form-urlencoded",
       Accept: "application/json",
     },
-    body: JSON.stringify({
-      client_id: GITHUB_CLIENT_ID,
-      client_secret: GITHUB_CLIENT_SECRET,
-      code,
-      redirect_uri: GITHUB_REDIRECT_URI,
-    }),
+    body: form.toString(),
   });
 
-  const data = await response.json();
+  const data = (await response.json()) as Record<string, unknown>;
 
   if (data.error) {
-    throw new Error(`GitHub OAuth error: ${data.error_description}`);
+    const description =
+      typeof data.error_description === "string"
+        ? data.error_description
+        : "unknown_error";
+    throw new Error(`GitHub OAuth error: ${description}`);
   }
 
-  return data.access_token;
+  if (!response.ok) {
+    throw new Error(`GitHub OAuth error: ${response.status}`);
+  }
+
+  return parseTokenExchange(data);
+}
+
+export async function refreshGitHubAccessToken(
+  refreshToken: string
+): Promise<GitHubTokenExchange> {
+  const form = new URLSearchParams({
+    client_id: GITHUB_CLIENT_ID,
+    client_secret: GITHUB_CLIENT_SECRET,
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+  });
+
+  const response = await fetch(GITHUB_TOKEN_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    },
+    body: form.toString(),
+  });
+
+  const data = (await response.json()) as Record<string, unknown>;
+
+  if (data.error) {
+    const description =
+      typeof data.error_description === "string"
+        ? data.error_description
+        : "token_refresh_failed";
+    throw new Error(`GitHub OAuth error: ${description}`);
+  }
+
+  if (!response.ok) {
+    throw new Error(`GitHub OAuth error: ${response.status}`);
+  }
+
+  return parseTokenExchange(data);
 }

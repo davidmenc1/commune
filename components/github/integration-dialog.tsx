@@ -46,14 +46,26 @@ interface GitHubIntegrationDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface InitialGitHubParams {
+  token: string;
+  refreshToken: string | null;
+  tokenExpiresAt: string | null;
+  refreshTokenExpiresAt: string | null;
+}
+
 // Check URL params once on module load to avoid race conditions
-function getInitialGitHubParams() {
+function getInitialGitHubParams(): InitialGitHubParams | null {
   if (typeof window === "undefined") return null;
   const params = new URLSearchParams(window.location.search);
   const githubSetup = params.get("github_setup");
   const token = params.get("github_token");
   if (githubSetup === "pending" && token) {
-    return { token };
+    return {
+      token,
+      refreshToken: params.get("github_refresh_token"),
+      tokenExpiresAt: params.get("github_token_expires_at"),
+      refreshTokenExpiresAt: params.get("github_refresh_token_expires_at"),
+    };
   }
   return null;
 }
@@ -98,6 +110,9 @@ export function GitHubIntegrationDialog({
     const url = new URL(window.location.href);
     url.searchParams.delete("github_setup");
     url.searchParams.delete("github_token");
+    url.searchParams.delete("github_refresh_token");
+    url.searchParams.delete("github_token_expires_at");
+    url.searchParams.delete("github_refresh_token_expires_at");
     window.history.replaceState({}, "", url.toString());
   }, [onOpenChange]);
 
@@ -160,6 +175,9 @@ export function GitHubIntegrationDialog({
         body: JSON.stringify({
           channelId,
           accessToken: githubToken,
+          refreshToken: initialParams.current?.refreshToken,
+          tokenExpiresAt: initialParams.current?.tokenExpiresAt,
+          refreshTokenExpiresAt: initialParams.current?.refreshTokenExpiresAt,
           repoOwner: selectedRepo.owner,
           repoName: selectedRepo.name,
         }),
