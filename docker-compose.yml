@@ -35,6 +35,7 @@ services:
       ZERO_SCHEMA_PATH: app/zero/schema.ts
       NEXT_PUBLIC_ZERO_SERVER_URL: http://localhost:4848
       NEXT_PUBLIC_APP_URL: http://localhost:3000
+      BETTER_AUTH_URL: "http://localhost:3000"
       SETUP_CODE: hello
       APP_GH_CLIENT_ID: ""
       APP_GH_CLIENT_SECRET: ""
@@ -42,7 +43,7 @@ services:
       GITLAB_CLIENT_ID: ""
       GITLAB_CLIENT_SECRET: ""
       GITLAB_REDIRECT_URI: http://localhost:3000/api/gitlab/callback
-    command: ["sh", "-c", "mkdir -p /app/data/zero && bunx drizzle-kit migrate && bun run start"]
+    command: ["sh", "-c", "mkdir -p /app/data/zero && node ./scripts/init-auth-db.mjs && npx drizzle-kit migrate && npm run start"]
     ports:
       - "3000:3000"
     volumes:
@@ -65,7 +66,7 @@ services:
       ZERO_GET_QUERIES_URL: http://app:3000/api/zero/get-queries
       ZERO_MUTATE_URL: http://app:3000/api/zero/push
       ZERO_SCHEMA_PATH: app/zero/schema.ts
-    command: ["sh", "-c", "mkdir -p /app/data/zero && bunx zero-cache-dev"]
+    command: ["sh", "-c", "mkdir -p /app/data/zero && npx zero-cache-dev"]
     ports:
       - "4848:4848"
     volumes:

@@ -3,7 +3,7 @@ import {
   createBuilder,
   definePermissions,
 } from "@rocicorp/zero";
-import { schema, type Schema } from "@/zero-schema.gen";
+import { schema, type Schema } from "../../zero-schema.gen.ts";
 export const builder = createBuilder(schema);
 export const permissions = definePermissions(schema, () => ({
   usersTable: ANYONE_CAN_DO_ANYTHING,

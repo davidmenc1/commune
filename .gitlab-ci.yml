@@ -1,4 +1,4 @@
-image: oven/bun:latest
+image: node:22
 
 stages:
   - lint
@@ -6,5 +6,5 @@ stages:
 lint:
   stage: lint
   script:
-    - bun install
-    - bun run lint
+    - npm ci
+    - npm run lint

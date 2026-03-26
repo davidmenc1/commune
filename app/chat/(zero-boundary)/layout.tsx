@@ -33,6 +33,27 @@ export default function TrafficLayout({
   const router = useRouter();
   const [isResolvingJwt, setIsResolvingJwt] = useState(true);
 
+  const zeroServerUrl = useMemo(() => {
+    const configured = process.env.NEXT_PUBLIC_ZERO_SERVER_URL?.trim();
+    if (configured) {
+      return configured;
+    }
+
+    if (typeof window !== "undefined") {
+      return `${window.location.protocol}//${window.location.hostname}:4848`;
+    }
+
+    return "http://localhost:4848";
+  }, []);
+
+  const zeroQueryUrl = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return `${window.location.origin}/api/zero/get-queries`;
+    }
+
+    return "http://localhost:3000/api/zero/get-queries";
+  }, []);
+
   const needsRefresh = useMemo(() => {
     if (!jwt) return true;
     return isJwtExpired(jwt);
@@ -97,11 +118,11 @@ export default function TrafficLayout({
         {...{
           userID: id,
           auth: jwt,
-          server: process.env.NEXT_PUBLIC_ZERO_SERVER_URL,
+          server: zeroServerUrl,
           schema,
           mutators: createMutators({ jwt }),
           query: {
-            url: "http://localhost:3000/api/zero/get-queries",
+            url: zeroQueryUrl,
           },
         }}
       >

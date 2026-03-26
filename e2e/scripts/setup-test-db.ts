@@ -62,7 +62,7 @@ async function setupTestDatabase() {
     console.log(`Target: ${parsedUrl.hostname}/${parsedUrl.pathname.replace('/', '')}`);
 
     console.log('Running Drizzle migrations...');
-    execSync('bunx drizzle-kit migrate', {
+    execSync('npx drizzle-kit migrate', {
       stdio: 'inherit',
       env: process.env,
     });
