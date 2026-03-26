@@ -1,7 +1,7 @@
 "use client";
 
 import { ZeroProvider, useSuspenseQuery } from "@rocicorp/zero/react";
-import { useTranslations } from 'next-intl';
+import { useTranslations } from "next-intl";
 import { schema } from "@/app/zero/schema";
 import { createMutators } from "@/app/zero/mutators";
 import { clearJwt, getJwt, getUserFromJwt, useJwt } from "@/app/auth/jwt";
@@ -28,7 +28,7 @@ export default function TrafficLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const t = useTranslations('common');
+  const t = useTranslations("common");
   const jwt = useJwt();
   const router = useRouter();
   const [isResolvingJwt, setIsResolvingJwt] = useState(true);
@@ -40,7 +40,7 @@ export default function TrafficLayout({
     }
 
     if (typeof window !== "undefined") {
-      return `${window.location.protocol}//${window.location.hostname}:4848`;
+      return `https://commune-zero.vladanmatejka.top`;
     }
 
     return "http://localhost:4848";
@@ -107,7 +107,7 @@ export default function TrafficLayout({
   }, [jwt, needsRefresh, router]);
 
   if (isResolvingJwt || !jwt) {
-    return <div>{t('loading')}</div>;
+    return <div>{t("loading")}</div>;
   }
 
   const { id } = getUserFromJwt(jwt);
@@ -144,7 +144,13 @@ export default function TrafficLayout({
   );
 }
 
-function AccessControlWrapper({ children, jwt }: { children: React.ReactNode; jwt: string }) {
+function AccessControlWrapper({
+  children,
+  jwt,
+}: {
+  children: React.ReactNode;
+  jwt: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const isE2E = process.env.NEXT_PUBLIC_E2E === "true";
@@ -154,7 +160,7 @@ function AccessControlWrapper({ children, jwt }: { children: React.ReactNode; jw
   });
   const user = useMemo(
     () => (isE2E ? { id: "e2e-user" } : zeroUser),
-    [isE2E, zeroUser]
+    [isE2E, zeroUser],
   );
 
   useEffect(() => {
