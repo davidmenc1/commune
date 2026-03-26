@@ -14,6 +14,7 @@ import {
 import { NextResponse } from "next/server";
 import { createLocalJWKSet, jwtVerify } from "jose";
 import { JwksData } from "@/app/auth/jwt";
+import { getJwksUrl, getJwtVerificationConfig } from "@/app/auth/server-config";
 
 export type AuthContext = { jwt: string };
 
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
   }
 
   if (jwksData === null) {
-    const res = await fetch("http://localhost:3000/api/auth/jwks");
+    const res = await fetch(getJwksUrl());
     jwksData = await res.json();
   }
 
@@ -48,11 +49,7 @@ export async function POST(request: Request) {
     return new Response("JWKS data not found", { status: 500 });
   }
 
-  console.log(jwt, jwksData);
-  await jwtVerify(jwt, createLocalJWKSet(jwksData), {
-    audience: "http://localhost:3000",
-    issuer: "http://localhost:3000",
-  });
+  await jwtVerify(jwt, createLocalJWKSet(jwksData), getJwtVerificationConfig());
 
   const res = await handleGetQueriesRequest(
     (name, args) => getQuery({ jwt }, name, args),

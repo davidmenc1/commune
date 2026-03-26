@@ -4,6 +4,7 @@ import { nanoid } from "nanoid";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { JwksData } from "@/app/auth/jwt";
+import { getJwksUrl, getJwtVerificationConfig } from "@/app/auth/server-config";
 
 let jwksData: JwksData | null = null;
 
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
   try {
     // Verify JWT
     if (jwksData === null) {
-      const res = await fetch("http://localhost:3000/api/auth/jwks");
+      const res = await fetch(getJwksUrl());
       jwksData = await res.json();
     }
 
@@ -37,10 +38,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await jwtVerify(jwt, createLocalJWKSet(jwksData), {
-      audience: "http://localhost:3000",
-      issuer: "http://localhost:3000",
-    });
+    await jwtVerify(jwt, createLocalJWKSet(jwksData), getJwtVerificationConfig());
 
     // Parse form data
     const formData = await request.formData();
@@ -79,5 +77,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
 
