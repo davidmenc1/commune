@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.github
+e2e
+dokumentace
+*.db
+*.zip
+.env
+.env.*
+npm-debug.log*
+data/attachments
+e2e/test-results

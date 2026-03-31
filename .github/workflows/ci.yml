@@ -1,0 +1,155 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CI: true
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npx tsc --noEmit
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app
+        run: npm run build
+
+  e2e:
+    name: E2E (Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs:
+      - lint
+      - typecheck
+      - build
+    env:
+      ZERO_UPSTREAM_DB: ${{ secrets.E2E_ZERO_UPSTREAM_DB }}
+      BETTER_AUTH_SECRET: test-secret-key-for-e2e-testing-do-not-use-in-production
+      BETTER_AUTH_DB: ./better-auth-test.db
+      ZERO_REPLICA_FILE: /tmp/sync-replica-test.db
+      ZERO_AUTH_JWKS_URL: http://localhost:3000/api/auth/jwks
+      ZERO_GET_QUERIES_URL: http://localhost:3000/api/zero/get-queries
+      ZERO_MUTATE_URL: http://localhost:3000/api/zero/push
+      ZERO_SCHEMA_PATH: app/zero/schema.ts
+      NEXT_PUBLIC_ZERO_SERVER_URL: http://localhost:4848
+      SETUP_CODE: test-setup-code-12345
+      APP_GH_CLIENT_SECRET: mock-github-secret-for-testing
+      APP_GH_CLIENT_ID: mock-github-client-id
+      APP_GH_REDIRECT_URI: http://localhost:3000/api/github/callback
+      GITLAB_CLIENT_ID: mock-gitlab-client-id
+      GITLAB_CLIENT_SECRET: mock-gitlab-secret-for-testing
+      GITLAB_REDIRECT_URI: http://localhost:3000/api/gitlab/callback
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_E2E: "true"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package.json', 'package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Validate E2E database config
+        run: |
+          if [ -z "$ZERO_UPSTREAM_DB" ]; then
+            echo "Missing required GitHub secret: E2E_ZERO_UPSTREAM_DB"
+            exit 1
+          fi
+
+      - name: Prepare test database
+        run: npm run test:e2e:setup
+
+      - name: Run Playwright tests
+        run: npx playwright test --project=chromium
+
+      - name: Upload Playwright artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-results
+          path: e2e/test-results
+          if-no-files-found: ignore
+          retention-days: 7

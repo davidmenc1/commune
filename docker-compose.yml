@@ -1,0 +1,77 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: chat-app-postgres
+    command: ["postgres", "-c", "wal_level=logical"]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d chat-app-postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      BETTER_AUTH_SECRET: local-dev-secret-change-me
+      BETTER_AUTH_DB: /app/data/better-auth.db
+      ZERO_UPSTREAM_DB: postgresql://postgres:postgres@postgres:5432/chat-app-postgres
+      ZERO_REPLICA_FILE: /app/data/zero/sync-replica.db
+      ZERO_AUTH_JWKS_URL: http://app:3000/api/auth/jwks
+      ZERO_GET_QUERIES_URL: http://app:3000/api/zero/get-queries
+      ZERO_MUTATE_URL: http://app:3000/api/zero/push
+      ZERO_SCHEMA_PATH: app/zero/schema.ts
+      NEXT_PUBLIC_ZERO_SERVER_URL: http://localhost:4848
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      BETTER_AUTH_URL: "http://localhost:3000"
+      SETUP_CODE: hello
+      APP_GH_CLIENT_ID: ""
+      APP_GH_CLIENT_SECRET: ""
+      APP_GH_REDIRECT_URI: http://localhost:3000/api/github/callback
+      GITLAB_CLIENT_ID: ""
+      GITLAB_CLIENT_SECRET: ""
+      GITLAB_REDIRECT_URI: http://localhost:3000/api/gitlab/callback
+    command: ["sh", "-c", "mkdir -p /app/data/zero && node ./scripts/init-auth-db.mjs && npx drizzle-kit migrate && npm run start"]
+    ports:
+      - "3000:3000"
+    volumes:
+      - app_data:/app/data
+
+  zero-cache:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      app:
+        condition: service_started
+    environment:
+      ZERO_UPSTREAM_DB: postgresql://postgres:postgres@postgres:5432/chat-app-postgres
+      ZERO_REPLICA_FILE: /app/data/zero/sync-replica.db
+      ZERO_AUTH_JWKS_URL: http://app:3000/api/auth/jwks
+      ZERO_GET_QUERIES_URL: http://app:3000/api/zero/get-queries
+      ZERO_MUTATE_URL: http://app:3000/api/zero/push
+      ZERO_SCHEMA_PATH: app/zero/schema.ts
+    command: ["sh", "-c", "mkdir -p /app/data/zero && npx zero-cache-dev"]
+    ports:
+      - "4848:4848"
+    volumes:
+      - app_data:/app/data
+
+volumes:
+  postgres_data:
+  app_data:
