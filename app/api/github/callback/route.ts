@@ -1,25 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exchangeCodeForToken, GitHubClient } from "@/lib/github";
+import { getAuthBaseUrl } from "@/app/auth/server-config";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
   const state = searchParams.get("state");
   const error = searchParams.get("error");
+  const appBaseUrl = getAuthBaseUrl();
 
   if (error) {
     return NextResponse.redirect(
-      new URL(
-        `/chat/channels?github_error=${encodeURIComponent(error)}`,
-        request.url
-      )
+      new URL(`/chat/channels?github_error=${encodeURIComponent(error)}`, appBaseUrl)
     );
   }
 
   if (!code || !state) {
-    return NextResponse.redirect(
-      new URL("/chat/channels?github_error=missing_params", request.url)
-    );
+    return NextResponse.redirect(new URL("/chat/channels?github_error=missing_params", appBaseUrl));
   }
 
   // Decode state to get channelId
@@ -31,7 +28,7 @@ export async function GET(request: NextRequest) {
     channelId = stateData.channelId;
   } catch {
     return NextResponse.redirect(
-      new URL("/chat/channels?github_error=invalid_state", request.url)
+      new URL("/chat/channels?github_error=invalid_state", appBaseUrl)
     );
   }
 
@@ -44,7 +41,7 @@ export async function GET(request: NextRequest) {
 
     const callbackUrl = new URL(
       `/chat/channels/${channelId}`,
-      request.url
+      appBaseUrl
     );
     callbackUrl.searchParams.set("github_setup", "pending");
     callbackUrl.searchParams.set("github_token", tokenExchange.accessToken);
@@ -71,10 +68,7 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     console.error("GitHub OAuth error:", err);
     return NextResponse.redirect(
-      new URL(
-        `/chat/channels/${channelId}?github_error=token_exchange_failed`,
-        request.url
-      )
+      new URL(`/chat/channels/${channelId}?github_error=token_exchange_failed`, appBaseUrl)
     );
   }
 }
